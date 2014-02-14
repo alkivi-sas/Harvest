@@ -292,6 +292,12 @@ class Invoice(HarvestItemBase):
         return 'invoice %d for client %d' % (self.id, self.client_id)
 
     @property
+    def client(self):
+        """Return all ... guest what ... client !
+        """
+        return self.harvest.client(self.client_id)
+
+    @property
     def csv_line_items(self):
         """Invoices from lists omit csv-line-items
         """
