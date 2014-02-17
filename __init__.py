@@ -6,6 +6,7 @@ See http://www.getharvest.com/api
 
 '''
 import urllib2
+import datetime
 from base64 import b64encode
 from dateutil.parser import parse as parseDate
 from xml.dom.minidom import parseString
@@ -66,6 +67,11 @@ class User(HarvestItemBase):
         
         Parameters start and end are date and should be optional 
         """
+        if not start:
+            start = datetime.date(1990, 01, 01)
+        if not end:
+            end = datetime.date.today() + datetime.timedelta(days=1)
+
         return self.harvest._time_entries('%s/%d/' % (self.base_url, self.id),
                                           start, end)
 
@@ -82,12 +88,30 @@ class Project(HarvestItemBase):
     def __str__(self):
         return 'Project: ' + self.name
 
-    def entries(self, start, end):
+    def entries(self, start=None, end=None):
         """Return entries for a specific users
         
         Parameters start and end are date and should be optional 
         """
+        if not start:
+            start = datetime.date(1990, 01, 01)
+        if not end:
+            end = datetime.date.today() + datetime.timedelta(days=1)
+
         return self.harvest._time_entries('%s/%d/' % (self.base_url, self.id),
+                                          start, end)
+
+    def expenses(self, start=None, end=None):
+        """Return entries for a specific users
+        
+        Parameters start and end are date and should be optional 
+        """
+        if not start:
+            start = datetime.date(1990, 01, 01)
+        if not end:
+            end = datetime.date.today() + datetime.timedelta(days=1)
+
+        return self.harvest._expenses('%s/%d/' % (self.base_url, self.id),
                                           start, end)
 
     @property
@@ -146,6 +170,12 @@ class Expense(HarvestItemBase):
         return self.harvest.project(self.project_id)
 
     @property
+    def user(self):
+        """Return all ... guest what ... the associated user !
+        """
+        return self.harvest.user(self.user_id)
+
+    @property
     def receipt(self):
         """Return attachement, if any
         """
@@ -155,8 +185,6 @@ class Expense(HarvestItemBase):
         else:
             return None
         
-            
-
     def __str__(self):
         return 'Expense: %s' % self.notes
 
@@ -449,6 +477,20 @@ class Harvest(object):
 
         for element in self.get_element_values(url, 'day-entry'):
             yield Entry(self, element)
+
+    def _expenses(self, root, start, end, closed=None, billed=None, unbilled=None):
+        """Helper to get expenses from a specific object
+
+        Parameters :
+        start and end are datetime object
+        close billed unbilled allow filtering
+        """
+
+        url = root + 'expenses?from=%s&to=%s' % (start.strftime('%Y%m%d'), 
+                                                end.strftime('%Y%m%d'))
+
+        for element in self.get_element_values(url, 'expense'):
+            yield Expense(self, element)
 
     def _request(self, url, raw=False):
         """Perform low level request
