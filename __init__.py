@@ -142,8 +142,8 @@ class ExpenseCategory(HarvestItemBase):
     __metaclass__ = HarvestItemGetterable
 
     base_url = '/expense_categories'
-    element_name = 'expense_categories'
-    plural_name = 'expense_category'
+    element_name = 'expense_category'
+    plural_name = 'expense_categories'
 
     def __str__(self):
         return 'ExpenseCategory: %s' % self.name
@@ -157,17 +157,23 @@ class Expense(HarvestItemBase):
     element_name = 'expense'
     plural_name = 'expenses'
 
-    @property
-    def expense_category(self):
-        """Return all ... guest what ... the associated category !
-        """
-        return self.harvest.expense_category(self.expense_category_id)
 
     @property
     def project(self):
         """Return all ... guest what ... the associated project !
         """
         return self.harvest.project(self.project_id)
+
+    @property
+    def expense_category(self):
+        """Weird bug ...
+        """
+        if not hasattr(self, '_expense_category'):
+            url = '%s/%s' % ('/expense_categories', self.expense_category_id)
+            self._expense_category = self.harvest.get_element_values(
+                url,'expense-category').next()
+        return self._expense_category
+
 
     @property
     def user(self):
@@ -549,7 +555,6 @@ class Harvest(object):
                 return text
 
         xml = self._request(url)
-        logger.debug_debug('Reponse from %s' % url, xml)
         for entry in xml.getElementsByTagName(tagname):
             value = {}
             for attr in entry.childNodes:
